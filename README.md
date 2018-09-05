@@ -2,7 +2,7 @@
 ## Installation
 Set up your development tools by following the steps in this article:
 
-[https://docs.mendix.com/MXSDK/setting-up-your-development-environment#setting-up-your-development-tools] (https://docs.mendix.com/MXSDK/setting-up-your-development-environment#setting-up-your-development-tools)
+[https://docs.mendix.com/apidocs-mxsdk/mxsdk/setting-up-your-development-environment](https://docs.mendix.com/apidocs-mxsdk/mxsdk/setting-up-your-development-environment)
 
 Clone the repository to a folder on your local pc and then open the folder in a command prompt. 
 
