@@ -1,4 +1,4 @@
-import {IModel, projects, microflows, datatypes, texts, expressions, domainmodels} from "mendixmodelsdk/dist"
+import {IModel, projects, microflows, datatypes, texts, domainmodels} from "mendixmodelsdk/dist"
 
 export class Microflow {
 	private _model: IModel;

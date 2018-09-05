@@ -1,6 +1,5 @@
 import {MendixSdkClient, Project, OnlineWorkingCopy, Revision, Branch} from 'mendixplatformsdk/dist';
-import {IModel,domainmodels, microflows, projects, texts, settings, datatypes, utils} from 'mendixmodelsdk/dist';
-import when = require('when');
+import {IModel,domainmodels, microflows, projects, datatypes} from 'mendixmodelsdk/dist';
 import {Microflow} from './mendix-component-creators/Microflow';
 import config = require('./config.json');
 
@@ -21,23 +20,27 @@ const client = new MendixSdkClient(config.auth.username, config.auth.apikey);
 const project = new Project(client,config.project.id, config.project.name);
 const revision = new Revision(-1, new Branch(project,config.project.branch)); // always use the latest revision
 
-client.platform().createOnlineWorkingCopy(project, revision)
-    .then(workingCopy=>createValidationMicroflows(workingCopy))
-    .then(workingCopy => {
-        
-        console.log("Committing working copy...")
-        return workingCopy.commit();
-    })
-    .done(
-    () => {
-        console.log("Commit complete. Please update your project in the modeller.");
-    },
-    error => {
-        console.log("Something went wrong.");
-        console.dir(error);
-    });
+async function execute(){
+    const workingCopy = await client.platform().createOnlineWorkingCopy(project, revision);
 
-function createValidationMicroflows(workingCopy: OnlineWorkingCopy): when.Promise<OnlineWorkingCopy> {            
+    const domainModels = getDomainModels(workingCopy);
+
+    createMicroflows(workingCopy, domainModels);
+
+    workingCopy.commit()
+        .done(
+            () => {
+                console.log("Commit complete. Please update your project in the modeller.");
+            },
+            error => {
+                console.log("Something went wrong.");
+                console.dir(error);
+            });
+};
+
+execute();
+
+function getDomainModels(workingCopy: OnlineWorkingCopy) {            
     var moduleNames = config.app.modules.map(function(m) {return m.name;});
     var domainModels : domainmodels.IDomainModel[] = workingCopy.model()
         .allDomainModels()
@@ -50,39 +53,45 @@ function createValidationMicroflows(workingCopy: OnlineWorkingCopy): when.Promis
 
             return false;                
         });
-    return createMicroflows(workingCopy, domainModels)
-    .then(_=>workingCopy);
+
+    return domainModels;
 }
 
-function createMicroflows(workingCopy: OnlineWorkingCopy, domainModels : domainmodels.IDomainModel[]) : when.Promise<OnlineWorkingCopy>{    
-    return when.all(
-        domainModels.map(function(dm){
-            let module : projects.IModule = dm.containerAsModule;  
-            let folder : projects.IFolderBase = createFolder(dm.containerAsFolderBase, config.app.folderName);       
-            // filter entities that should be processed based on the configuration (no entities configured will process all)
-            let moduleConfig =config.app.modules.filter(m=> m.name == module.name)[0];            
-            let entities : domainmodels.IEntity[] = dm.entities;
-            if(moduleConfig.entities && moduleConfig.entities.length > 0){
-                entities = dm.entities.filter(e=>{
-                    for (var i = 0; i < moduleConfig.entities.length; i++)
-                        return (e.name === moduleConfig.entities[i])
-                });
-            }
+function createMicroflows(workingCopy: OnlineWorkingCopy, domainModels : domainmodels.IDomainModel[]) {    
+    domainModels.map(function(dm){
+        let module : projects.IModule = dm.containerAsModule;  
+        let folder : projects.IFolderBase = createFolder(dm.containerAsFolderBase, config.app.folderName);       
+        // filter entities that should be processed based on the configuration (no entities configured will process all)
+        let moduleConfig =config.app.modules.filter(m=> m.name == module.name)[0];            
+        let entities : domainmodels.IEntity[] = dm.entities;
+        if(moduleConfig.entities && moduleConfig.entities.length > 0){
+            entities = dm.entities.filter(e=>{
+                for (var i = 0; i < moduleConfig.entities.length; i++)
+                    return (e.name === moduleConfig.entities[i])
+            });
+        }
 
-            // create a microflow for each entity
-            entities.map(function(entity){
-                var microflowName = config.app.validationMicroflowPrefix + entity.name;
-                var mf = workingCopy.model().findMicroflowByQualifiedName(module.name + '.' + microflowName);
-                if( !mf ){          
-                    createValidationMicroflow(workingCopy.model(),microflowName, module, entity, folder);
-                }
-                else{
-                    console.log( "Microflow '" + microflowName + "' not created. A microflow with that name already exists.");
-                }                        
-            })
+        // create a microflow for each entity
+        entities.map(function(entity){
+            var microflowName = config.app.validationMicroflowPrefix + entity.name;
+            var mf = workingCopy.model().findMicroflowByQualifiedName(module.name + '.' + microflowName);
+            if( !mf ){          
+                createValidationMicroflow(workingCopy.model(),microflowName, module, entity, folder);
+            }
+            else{
+                console.log( "Microflow '" + microflowName + "' not created. A microflow with that name already exists.");
+            }                        
         })
-    )
-    .then(wc=>workingCopy);
+    })
+}
+
+function createFolder(folderBase : projects.IFolderBase, folderName: string): projects.IFolderBase {
+    let folder = folderBase.folders.find(f=>f.name == folderName);
+    if( !folder ){
+        folder = projects.Folder.createIn(folderBase);
+        folder.name = folderName;
+    }  
+    return folder; 
 }
 
 function createValidationMicroflow(model: IModel, microflowName : string, module: projects.IModule, entity : domainmodels.IEntity, folder : projects.IFolderBase) {
@@ -121,15 +130,6 @@ function createValidationMicroflow(model: IModel, microflowName : string, module
     lastActivity = endEvent;
 }
 
-function createFolder(folderBase : projects.IFolderBase, folderName: string): projects.IFolderBase {
-    let folder = folderBase.folders.find(f=>f.name == folderName);
-    if( !folder ){
-        folder = projects.Folder.createIn(folderBase);
-        folder.name = folderName;
-    }  
-    return folder; 
-}
-
 function addValidationActivities(microflow : Microflow, entity : domainmodels.IEntity, attribute : domainmodels.IAttribute, connectFromObject: microflows.MicroflowObject): microflows.MicroflowObject {
     // check if we have a type split expression template defined for the attribute
     const splitExpressionTemplate = typeSplitExpressions[attribute.type.structureTypeName];
@@ -164,12 +164,4 @@ function addValidationActivities(microflow : Microflow, entity : domainmodels.IE
 		exclusiveSplit, merge, Microflow.ConnectorPosition.Right, Microflow.ConnectorPosition.Left, caseValue_true);
 
     return merge;
-}
-    
-interface Loadable<T> {
-    load(callback: (result: T) => void): void;
-}
-
-function loadAsPromise<T>(loadable: Loadable<T>): when.Promise<T> {
-    return when.promise<T>((resolve, reject) => loadable.load(resolve));
 }
