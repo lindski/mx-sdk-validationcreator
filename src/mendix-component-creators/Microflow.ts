@@ -26,10 +26,6 @@ export class Microflow {
         this._microflow.concurrencyErrorMessage = concurrencyErrorMessage;
 	}
 
-	model(): IModel {
-		return this._model;
-	}
-
 	addInputParameter(parameterName : string, variableType : datatypes.DataType) {
 		this._inputParameterCurrentX = this._inputParameterCurrentX + this._inputParameterXOffset;
 		this._inputParameterCurrentY = this._inputParameterCurrentY + this._inputParameterYOffset;
