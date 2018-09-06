@@ -76,14 +76,14 @@ export class Microflow {
 		this._microflow.flows.push(sequenceFlow);
 	}
 
-	generateStartEvent() {
+	generateStartEvent() : microflows.StartEvent {
 		let startEvent = microflows.StartEvent.create(this._model);
 		startEvent.size = {"width":20,"height":20};
 		
 		return startEvent;
 	}
 
-	generateEndEvent(returnValue : string) {
+	generateEndEvent(returnValue : string) : microflows.EndEvent {
 		let endEvent = microflows.EndEvent.create(this._model);
         endEvent.size = {"width":20,"height":20};
         endEvent.returnValue = returnValue;
