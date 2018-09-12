@@ -138,17 +138,20 @@ export class Microflow {
 	}
 
 	generateValidationFeedbackActivity(entity : domainmodels.IEntity, attribute : domainmodels.IAttribute, message : string) : microflows.ActionActivity {
+		let validationMessageTranslation = texts.Translation.create(this._model);
+		validationMessageTranslation.languageCode = "en_US";
+		validationMessageTranslation.text = message;
+		
 		let validationFeedbackAction = microflows.ValidationFeedbackAction.create(this._model);
         validationFeedbackAction.objectVariableName = entity.name;
         validationFeedbackAction.attribute = attribute;
         
         let validationTemplate = microflows.TextTemplate.createInValidationFeedbackActionUnderFeedbackTemplate(validationFeedbackAction);
-        let validationText = texts.Text.createInTextTemplateUnderText(validationTemplate);
-        for(var i = 0; i<validationText.translations.length;i++){
-            validationText.translations[i].text = message;
-        }
-        let validationFeedbackActivity = microflows.ActionActivity.create(this._model);
-		validationFeedbackActivity.action = validationFeedbackAction;
+		let validationText = texts.Text.createInTextTemplateUnderText(validationTemplate);					
+		validationText.translations.push(validationMessageTranslation);
+		
+		let validationFeedbackActivity = microflows.ActionActivity.create(this._model);
+		validationFeedbackActivity.action = validationFeedbackAction;		
 		
 		return validationFeedbackActivity;
 	}
