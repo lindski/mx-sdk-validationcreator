@@ -6,6 +6,7 @@ import config = require('./config.json');
 // expressions for supported attribute types
 // https://apidocs.mendix.com/modelsdk/latest/modules/domainmodels.html
 const typeSplitExpressions: { [id: string]: (variableName: string) => string; } = {
+   "DomainModels$BooleanAttributeType" : (variableName: string) => `${variableName}`,
    "DomainModels$CurrencyAttributeType" : (variableName: string) => `${variableName} != empty and ${variableName} > 0`,
    "DomainModels$DateTimeAttributeType" : (variableName: string) => `${variableName} != empty`,
    "DomainModels$DecimalAttributeType" : (variableName: string) => `${variableName} != empty and ${variableName} > 0`,
@@ -18,16 +19,16 @@ const typeSplitExpressions: { [id: string]: (variableName: string) => string; } 
 
 const client = new MendixSdkClient(config.auth.username, config.auth.apikey);
 const project = new Project(client,config.project.id, config.project.name);
-const revision = new Revision(-1, new Branch(project,config.project.branch)); // always use the latest revision
 
-async function execute(){
-    const workingCopy = await client.platform().createOnlineWorkingCopy(project, revision);
-
+async function execute(){   
+    const workingCopy = await client.platform().createOnlineWorkingCopy(project, new Revision(
+        -1, new Branch(project, (config.project.branch === "") ? "" : config.project.branch))); // we'll always use the latest revision
+    
     const domainModels = getDomainModels(workingCopy);
 
     createMicroflows(workingCopy, domainModels);
 
-    workingCopy.commit()
+    workingCopy.commit((config.project.branch === "") ? null : config.project.branch)
         .done(
             () => {
                 console.log("Commit complete. Please update your project in the modeller.");

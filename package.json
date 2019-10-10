@@ -3,15 +3,15 @@
   "version": "1.0.0",
   "description": "",
   "scripts": {
-    "start": "node build/script.js"
+    "start": "tsc && node build/script.js"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@types/when": "^2.4.28",
-    "mendixmodelsdk": "~4.14.0",
-    "mendixplatformsdk": "~4.0.0",
-    "when": "^2.4.28"
+    "@types/when": "^2.4.33",
+    "mendixmodelsdk": "~4.19.0",
+    "mendixplatformsdk": "~4.1.0",
+    "when": "^3.7.8"
   }
 }
