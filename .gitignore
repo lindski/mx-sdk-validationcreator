@@ -4,4 +4,4 @@ build/*
 *nbproject
 .vscode/
 reference/
-config.json
+src/config.json
