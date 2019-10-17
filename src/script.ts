@@ -77,8 +77,6 @@ function createMicroflows(workingCopy: OnlineWorkingCopy, domainModels : domainm
             });
         }
 
-        console.log(entities.length);
-
         // create a microflow for each entity
         entities.map(function(entity){
             var microflowName = config.app.validationMicroflowPrefix + entity.name;
