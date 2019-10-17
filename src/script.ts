@@ -60,29 +60,38 @@ function getDomainModels(workingCopy: OnlineWorkingCopy) {
 
 function createMicroflows(workingCopy: OnlineWorkingCopy, domainModels : domainmodels.IDomainModel[]) {    
     domainModels.map(function(dm){
-        let module : projects.IModule = dm.containerAsModule;  
+        let module : projects.IModule = dm.containerAsModule;
+        console.log( `--> ${module.name}`);
         let folder : projects.IFolderBase = createFolder(dm.containerAsFolderBase, config.app.folderName);       
         // filter entities that should be processed based on the configuration (no entities configured will process all)
         let moduleConfig =config.app.modules.filter(m=> m.name == module.name)[0];            
         let entities : domainmodels.IEntity[] = dm.entities;
         if(moduleConfig.entities && moduleConfig.entities.length > 0){
             entities = dm.entities.filter(e=>{
-                for (var i = 0; i < moduleConfig.entities.length; i++)
-                    return (e.name === moduleConfig.entities[i])
+                for (var i = 0; i < moduleConfig.entities.length; i++){
+                    if (e.name === moduleConfig.entities[i]){
+                        return true;
+                    }
+                }
+                return false;
             });
         }
+
+        console.log(entities.length);
 
         // create a microflow for each entity
         entities.map(function(entity){
             var microflowName = config.app.validationMicroflowPrefix + entity.name;
+            console.log( `\t${entity.name} -> ${microflowName}`);
             var mf = workingCopy.model().findMicroflowByQualifiedName(module.name + '.' + microflowName);
             if( !mf ){          
                 createValidationMicroflow(workingCopy.model(),microflowName, module, entity, folder);
             }
             else{
-                console.log( "Microflow '" + microflowName + "' not created. A microflow with that name already exists.");
+                console.log( `\t\t!!! Microflow '${microflowName}' not created. A microflow with that name already exists.`);
             }                        
         })
+        console.log( `<-- ${module.name}`);
     })
 }
 
